@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.0;
+pragma solidity ^0.6.0;
 
 // external contracts
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.6/vendor/SafeMathChainlink.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
+import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
 
 contract Lottery is VRFConsumerBase, Ownable {
     using SafeMathChainlink for uint256;
-    address[] public players;
-    address public recentWinner;
+    address payable[] public players;
+    address payable public recentWinner;
     uint256 public randomness;
     uint256 public usdEntryFee;
     AggregatorV3Interface internal ethUsdPriceFeed;
@@ -77,13 +77,15 @@ contract Lottery is VRFConsumerBase, Ownable {
     }
     function fulfillRandomness(bytes32 _requestId, uint256 _randomness) internal override {
         // require lottery state to calculating winner
-        require(lottery_state = LOTTERY_STATE.CALCULATING_WINNER, "You are not there yet!");
+        require(lottery_state == LOTTERY_STATE.CALCULATING_WINNER, "You are not there yet!");
         // require request random to be called, so randomness value is != 0
         require(_randomness > 0, "random-not-found");
+        // find the winner address
+        // modulo wraps the random value to number of players
         uint256 indexOfWinner = _randomness % players.length;
         recentWinner = players[indexOfWinner];
         // transfer balance to winner address
-        recentWinner.transfer(address(this).balance));
+        recentWinner.transfer(address(this).balance);
         // new resets the value
         players = new address payable[](0);
         // change state of lottery
